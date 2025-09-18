@@ -1,0 +1,60 @@
+{
+  "oppo": {
+    "bannerAd": {
+      "id1": "7bc4697f08804348b9ba77fd3b0d2b30",
+      "id2": "78f030df9b4e4fcaaf92d917d8096373"
+    },
+    "interstitialAd": {
+      "id1": "78f030df9b4e4fcaaf92d917d8096373"
+    },
+    "customAd": {
+      "id1": "0af8a02c879d45d287224f1e8746cce6"
+    },
+    "rewardedVideoAd": {
+      "id1": "04d3a5fcf10a406b883ad1f7866a85c8"
+    }
+  },
+  "vivo": {
+    "bannerAd": {
+      "id1": "7bc4697f08804348b9ba77fd3b0d2b30",
+      "id2": "78f030df9b4e4fcaaf92d917d8096373"
+    },
+    "interstitialAd": {
+      "id1": "78f030df9b4e4fcaaf92d917d8096373"
+    },
+    "customAd": {
+      "id1": "0af8a02c879d45d287224f1e8746cce6"
+    },
+    "rewardedVideoAd": {
+      "id1": "04d3a5fcf10a406b883ad1f7866a85c8"
+    }
+  },
+  "mi": {
+    "bannerAd": {
+      "id1": "04d3a5fcf10a406b883ad1f7866a85c8"
+    },
+    "interstitialAd": {
+      "id1": "04d3a5fcf10a406b883ad1f7866a85c8"
+    },
+    "customAd": {
+      "id1": "04d3a5fcf10a406b883ad1f7866a85c8"
+    },
+    "rewardedVideoAd": {
+      "id1": "04d3a5fcf10a406b883ad1f7866a85c8"
+    }
+  },
+  "honor": {
+    "bannerAd": {
+      "id1": "04d3a5fcf10a406b883ad1f7866a85c8"
+    },
+    "interstitialAd": {
+      "id1": "04d3a5fcf10a406b883ad1f7866a85c8"
+    },
+    "customAd": {
+      "id1": "04d3a5fcf10a406b883ad1f7866a85c8"
+    },
+    "rewardedVideoAd": {
+      "id1": "04d3a5fcf10a406b883ad1f7866a85c8"
+    }
+  }
+}

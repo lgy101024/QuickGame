@@ -1,0 +1,28 @@
+{
+  "environment": "product",
+  "version": "1.0.0",
+  "oppoConfig": {
+    "appid": "30849125",
+    "version": "1.0.0",
+    "sdkPayUrl": "http://10.117.224.136:8081/pay_oppo"
+  },
+  "vivoConfig": {
+    "appid": "30849125",
+    "appKey": "635fd8fd145fcec02749cb4ee7b4a744",
+    "appSecret": "0e169ad37148d220cb4411f1ca2afed3",
+    "version": "1.0.0",
+    "sdkPayUrl": "http://127.0.0.1:8080/pay_vivo"
+  },
+  "miConfig": {
+    "appid": "30849125",
+    "version": "1.0.0",
+    "sdkPayUrl": "http://127.0.0.1:8080/pay_mi"
+  },
+  "honorConfig": {
+    "appid": "30849125",
+    "appSecret": "string",
+    "version": "1.0.0",
+    "sdkLoginUrl": "https://hnoauth-login.cloud.honor.com/oauth2/v3/token",
+    "sdkPayUrl": ""
+  }
+}

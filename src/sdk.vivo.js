@@ -75,7 +75,7 @@ class VIVO_SDK extends Base_SDK {
                         token,
                         code: 0
                     };
-                    console.log("vivo 登录成功:", returnData);
+                    console.log("vivo requestUserInfo 成功:", returnData);
                     this._safeCallback(success, returnData);
                 }
             },

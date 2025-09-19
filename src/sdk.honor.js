@@ -17,16 +17,16 @@ class HONOR_SDK extends Base_SDK {
             needAuthCode,
             isProfileRequired,
             fail: (res) => {
-                console.warn("HONOR 登录失败", res);
+                console.error("honor 登录失败");
                 this._safeCallback(fail, res);
             },
             success: (res) => {
                 try {
                     const resData = res.data;
-                    console.log("HONOR 登录成功", JSON.stringify(res));
+                    console.log("honor 登录成功");
                     this._safeCallback(success, resData);
                 } catch (error) {
-                    console.error('处理登录成功回调时异常:', error);
+                    console.error('处理登录成功回调时异常');
                     this._safeCallback(fail, error);
                 }
             },

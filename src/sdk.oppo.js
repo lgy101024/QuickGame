@@ -25,13 +25,8 @@ class OPPO_SDK extends Base_SDK {
     unionLogin({ success, fail, complete }) {
         let returnData = {};
         qg.login({
-            fail: (res) => {
-                console.log("OPPO 登陆失败", res);
-                returnData = res;
-                this._safeCallback(fail, returnData);
-            },
             success: (res) => {
-                console.log('login方法返回的值', res);
+                console.log('oppo 登陆成功');
                 qg.__token___ = res.token;
                 returnData = {
                     uid: res.uid,
@@ -41,7 +36,10 @@ class OPPO_SDK extends Base_SDK {
                     code: 0
                 };
                 this._safeCallback(success, returnData);
-
+            },
+            fail: (res) => {
+                console.error("oppo 登陆失败");
+                this._safeCallback(fail, res);
             },
             complete: () => {
                 this._safeCallback(complete);

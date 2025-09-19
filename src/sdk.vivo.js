@@ -93,9 +93,7 @@ class VIVO_SDK extends Base_SDK {
     unionLogin({ success, fail, complete }) {
         qg.login({
             success: (res) => {
-                console.log("login方法返回的值:", res);
                 const resData = res.uid ? res : res.data;
-
                 if (resData.uid) {
                     const returnData = {
                         uid: resData.uid,
@@ -104,7 +102,7 @@ class VIVO_SDK extends Base_SDK {
                         token: resData.token,
                         code: 0
                     };
-                    console.log("vivo 登录成功:", returnData);
+                    console.log("vivo 登录成功");
                     this._safeCallback(success, returnData);
                 } else {
                     // 通过服务器接口获取用户信息
@@ -112,7 +110,7 @@ class VIVO_SDK extends Base_SDK {
                 }
             },
             fail: (res) => {
-                console.error("vivo 登录失败:", res);
+                console.error("vivo 登录失败");
                 this._safeCallback(fail, res);
             },
             complete: () => {

@@ -15,9 +15,6 @@ class MI_SDK extends Base_SDK {
         const waitLoginProcess = new Promise((resolve, reject) => {
             console.log('isProfileRequired: ', isProfileRequired);
             qg.login({
-                fail: (res) => {
-                    reject(res);
-                },
                 success: (resData) => {
                     resData = resData.data;
                     const targetRes = {
@@ -40,13 +37,17 @@ class MI_SDK extends Base_SDK {
                     } else {
                         resolve(targetRes);
                     }
-                }
+                },
+                fail: (res) => {
+                    console.log("xiaomi 登录失败");
+                    reject(res);
+                },
             });
         });
 
         waitLoginProcess
             .then((res) => {
-                console.log("xiaomi 登录成功:", res);
+                console.log("xiaomi 登录成功");
                 this._safeCallback(success, res);
             })
             .catch((err) => {

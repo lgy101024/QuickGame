@@ -1,25 +1,35 @@
 class Base_SDK {
-    constructor() {}
+    constructor() { }
     init(json) {
         //通过json配置，初始化所需要的参数
     }
-    //登陆接口
-    //object:success, fail, complete
-    unionLogin(object) {}
-    //支付接口,orderInfo为JSON字符串
-    //object: orderInfo, success, fail, complete
-    //orderInfo内两个参数如下
-    //openId	string	是	qg.login 成功时获得的用户 token
-    //orderAmount  商品价格  单位为分，如商品价格为6元则要传“600”，传“6”或者“600.0”则会报错
-    //productId	String	是	商品ID    ***选传，只有荣耀需要
-    unionPay(object) {}
+    // 私有方法，安全调用单个回调
+    _safeCallback(callback, data) {
+        try {
+            if (typeof callback === 'function') {
+                callback(data);
+            }
+        } catch (error) {
+            console.error("回调函数执行异常:", JSON.stringify(error));
+        }
+    }
+
+    //登录
+    unionLogin(object) {
+        throw new Error('unionLogin 方法需要子类实现');
+    }
+
+    //支付
+    unionPay(object) {
+        throw new Error('unionPay 方法需要子类实现');
+    }
 
     //广告相关
-    initRewardedVideoAd() {}
-    showRewardedVideoAd() {}
-    createBannerAd(isShow = false) {}
-    showBannerAd() {}
-    hideBannerAd() {}
-    destroyBannerAd() {}
+    initRewardedVideoAd() { }
+    showRewardedVideoAd() { }
+    createBannerAd(isShow = false) { }
+    showBannerAd() { }
+    hideBannerAd() { }
+    destroyBannerAd() { }
 }
 module.exports = Base_SDK;

@@ -1,312 +1,163 @@
 const Base_SDK = require("./sdk.base");
 const CryptoJS = require("crypto-js");
-let vivoCfg = {}
 
 class VIVO_SDK extends Base_SDK {
     constructor() {
-        vivoCfg = qg.__sdk_config.vivoConfig
         super();
+        this._vivoCfg = qg.__sdk_config.vivoConfig || {};
     }
-    init() {
-    }
-    //登陆接口
-    unionLogin(object) {
-        const {
-            success,
-            fail,
-            complete
-        } = object;
-        qg.login({
-            fail: function (res) {
-                //登录失败
-                console.log("vivo 登陆失败", res);
-                try {
-                    if (fail) {
-                        fail(res);
-                    }
-                } catch (error) {
-                    console.error(error);
-                }
 
-                try {
-                    if (complete) {
-                        complete(res);
-                    }
-                } catch (error) {
-                    console.error(error);
+    init() {
+        // 初始化逻辑（保持空）
+    }
+
+    // 账号登陆服务器请求，使用token获取用户信息
+    _requestUserInfo(token, success, fail, complete) {
+        console.log("requestUserInfo token:", token);
+
+        const { appKey, appSecret } = this._vivoCfg;
+        const timestamp = Date.now();
+        const nonce = Math.floor(Math.random() * 100000000);
+
+        // 获取包名
+        let pkgName = '';
+        if (global.qg.manifest) {
+            pkgName = global.qg.manifest.package;
+        } else if (global.qg.getManifestInfoSync) {
+            try {
+                global.qg.manifest = global.qg.getManifestInfoSync();
+                pkgName = global.qg.manifest.package;
+            } catch (e) {
+                console.warn("获取manifest信息失败:", e);
+            }
+        } else {
+            try {
+                const manifestStr = qg.getFileSystemManager().readFileSync('manifest.json', 'utf8');
+                global.qg.manifest = JSON.parse(manifestStr);
+                pkgName = global.qg.manifest.package;
+            } catch (e) {
+                console.warn("读取manifest.json失败:", e);
+            }
+        }
+        if (!pkgName) {
+            try {
+                pkgName = qg.getSystemInfoSync().miniGame.appId;
+            } catch (e) {
+                console.warn("获取appId失败:", e);
+                pkgName = '';
+            }
+        }
+
+        // 生成签名字符串
+        const signMap = { pkgName, appKey, appSecret, timestamp, nonce, token };
+        const keys = Object.keys(signMap).sort();
+        const signString = keys.map(key => `${key}=${signMap[key]}`).join('&');
+
+        // 计算SHA256签名
+        const signature = CryptoJS.SHA256(signString).toString(CryptoJS.enc.Hex);
+
+        const queryStr = `pkgName=${pkgName}&token=${token}&timestamp=${timestamp}&nonce=${nonce}&signature=${signature}&encodeFlag=false`;
+        const url = `https://quickgame.vivo.com.cn/api/quickgame/cp/account/userInfo?${queryStr}`;
+
+        qg.request({
+            url,
+            success: (res) => {
+                if (!res || !res.data || !res.data.data || !res.data.data.openId) {
+                    console.error("requestUserInfo返回数据异常:", res);
+                    const returnData = { code: 400, message: '登录失败' };
+                    this._safeCallback(fail, returnData);
+                } else {
+                    const data = res.data.data;
+                    const returnData = {
+                        uid: data.openId,
+                        avatar: data.biggerAvatar,
+                        nickName: data.nickName,
+                        token,
+                        code: 0
+                    };
+                    console.log("vivo 登录成功:", returnData);
+                    this._safeCallback(success, returnData);
                 }
             },
-            success: function (res) {
-                console.log('login方法返回的值', res)
-                //低版本的 vivo 登陆成功返回的是 res.data
-                var resData = res.uid ? res : res.data; // 联盟的标准，返回的值就是res
+            fail: (err) => {
+                console.error("requestUserInfo请求失败:", err);
+                this._safeCallback(fail, err);
+            },
+            complete: () => {
+                this._safeCallback(complete);
+            }
+        });
+    }
 
-                // 返回用户信息以及token
-                let returnData = {} // 返回的值
+    // 登录接口
+    unionLogin({ success, fail, complete }) {
+        qg.login({
+            success: (res) => {
+                console.log("login方法返回的值:", res);
+                const resData = res.uid ? res : res.data;
+
                 if (resData.uid) {
-                    returnData = {
+                    const returnData = {
                         uid: resData.uid,
                         avatar: resData.avatar,
                         nickName: resData.nickName,
                         token: resData.token,
                         code: 0
-                    }
-                    try {
-                        if (success) {
-                            console.log("vivo 登陆成功: ", returnData);
-                            success(returnData);
-                        }
-                    } catch (error) {
-                        console.error(error);
-                    }
+                    };
+                    console.log("vivo 登录成功:", returnData);
+                    this._safeCallback(success, returnData);
                 } else {
-
-                    // 为了获取包名信息，先获取manifest信息
-                    if (!global.qg.manifest) {
-                        if (global.qg.getManifestInfoSync) {
-                          global.qg.manifest = global.qg.getManifestInfoSync()
-                        } else {
-                            try {
-                                const manifestStr = qg.getFileSystemManager().readFileSync('manifest.json', 'utf8')
-                                console.log('-----wx----- manifest解析到global中')
-                                global.qg.manifest = JSON.parse(manifestStr)
-                            } catch (err) { }
-                        }
-                    }
-
-                    var pkgName = global.qg.manifest ? global.qg.manifest.package : qg.getSystemInfoSync().miniGame.appId
-
-                    // 如果通过login获取不到用户信息，则通过服务器获取
-                    // 账号登陆服务器请求，使用token获取用户信息
-                    function requestUserInfo(token, success, fail, complete) {
-                        console.log("requestUserInfo token : " + token);
-                        // 账号登陆签名算法
-                        const appKey = vivoCfg.appKey
-                        const appSecret = vivoCfg.appSecret
-                        const timestamp = new Date().getTime()
-                        const nonce = Math.round(Math.random() * 100000000)
-
-                        function getSignatureContent() {
-                            const signMap = {
-                                pkgName: pkgName,
-                                appKey,
-                                appSecret,
-                                timestamp,
-                                nonce,
-                                token
-                            }
-                            const keys = Object.keys(signMap).sort()
-                            let signString = keys.map(key => key + '=' + signMap[key]).join('&')
-                            return signString
-                        }
-
-                        function sign(content) {
-                            const serverSignature = sha256(content)
-                            return serverSignature
-                        }
-
-                        function sha256(content) {
-                            const hash = CryptoJS.SHA256(content);
-                            const hex = hash.toString(CryptoJS.enc.Hex);
-                            return hex
-                        }
-                        const signatureContent = getSignatureContent()
-                        const serverSignature = sign(signatureContent)
-
-                        const str = "pkgName=" + pkgName + "&token=" + token + "&timestamp=" + timestamp + "&nonce=" + nonce + "&signature=" + serverSignature + "&encodeFlag=false";
-                        console.log(str)
-
-                        // 请求服务器获取用户信息
-                        qg.request({
-                            url: "https://quickgame.vivo.com.cn/api/quickgame/cp/account/userInfo?" + str,
-                            success: function (e) {
-                                if (!e || !e.data || !e.data.data || !e.data.data.openId) {
-                                    console.log("requestUserInfo error", e);
-                                    returnData = {
-                                        code: 400,
-                                        message: '登录失败'
-                                    }
-                                    try {
-                                        if (fail) {
-                                            fail(returnData);
-                                        }
-                                    } catch (error) {
-                                        console.error(error);
-                                    }
-                                } else {
-                                    console.log("requestUserInfo success", e);
-                                    returnData = {
-                                        uid: e.data.data.openId,
-                                        avatar: e.data.data.biggerAvatar,
-                                        nickName: e.data.data.nickName,
-                                        token: token,
-                                        code: 0
-                                    }
-                                    try {
-                                        if (success) {
-                                            console.log("vivo 登陆成功: ", returnData);
-                                            success(returnData);
-                                        }
-                                    } catch (error) {
-                                        console.error(error);
-                                    }
-                                }
-                            },
-                            fail: function (e) {
-                                console.log(e)
-                                try {
-                                    if (fail) {
-                                        fail(e);
-                                    }
-                                } catch (error) {
-                                    console.error(error);
-                                }
-                            },
-                            complete: function () {
-                                try {
-                                    if (complete) {
-                                        complete();
-                                    }
-                                } catch (error) {
-                                    console.error(error);
-                                }
-                            }
-                        })
-                    }
-
-                    requestUserInfo(resData.token, success, fail, complete);
+                    // 通过服务器接口获取用户信息
+                    this._requestUserInfo(resData.token, success, fail, complete);
                 }
+            },
+            fail: (res) => {
+                console.error("vivo 登录失败:", res);
+                this._safeCallback(fail, res);
+            },
+            complete: () => {
+                this._safeCallback(complete);
             }
         });
     }
 
+    // 支付接口
+    unionPay({ param, success, fail, complete }) {
+        const { productName, productDesc, getOrder } = param;
 
-    //支付接口
-    //orderAmount  商品价格  单位为分，如商品价格为6元则要传“600”，传“6”或者“600.0”则会报错
-    // productName  商品名称
-    unionPay(object) {
-        const {
-            orderInfo,
-            success,
-            fail,
-            complete
-        } = object;
-        if (orderInfo == null || orderInfo == undefined) {
-            console.log("charge orderInfo error");
-            return;
-        }
-
-        // 统一下单必填的数据（除了sign）
-        let sendData = orderInfo
-        console.log(`获取支付下单信息请求: ${JSON.stringify(sendData)}`);
-
-        qg.request({
-            url: vivoCfg.sdkPayUrl,
-            method: 'POST',
-            header: {
-                "Content-Type": "application/json"
-            },
-            data: sendData,
-            success: function (e) {
-                // 获取服务器返回的数据后调用文档的发起支付接口
-                let data = e.data && e.data.data;
-                console.log("支付下单信息服务器返回的data:", data);
-                let returnData = {}
-                if (!data) {
-                    returnData = {
-                        code: 102,
-                        message: res.error,
-                        result: res.error
-                    }
-                    try {
-                        if (fail) {
-                            fail(returnData);
-                        }
-                    } catch (error) {
-                        console.error(error);
-                    }
-                    return
-                }
-                console.log("请求下单orderInfo:", data);
-                qg.pay({
-                    orderInfo: data,
-                    // 成功回调函数，结果以 OPPO 小游戏平台通知CP的回调地址为准
-                    success: function (res) {
-                        console.log('支付成功：', res);
-                        returnData = {
-                            code: 0,
-                            message: '支付成功',
-                            result: res.result
-                        }
-                        if (success) success(returnData);
-                    },
-                    fail: function (res) {
-                        // errCode、errMsg
-                        console.log('支付失败：', res);
-                        let code = ''
-                        if (res.code == -1) { // 支付取消
-                            code = 101 // code为101时代表支付取消
-                        } else {
-                            code = 102 // code为102时代表支付失败
-                        }
-                        returnData = {
-                            code: code,
-                            message: res.data && res.data.message,
-                            result: res.data
-                        }
-                        try {
-                            if (fail) {
-                                fail(returnData);
-                            }
-                        } catch (error) {
-                            console.error(error);
-                        }
-                    },
-                    cancel: function (res) {
-                        console.log("支付取消")
-                        returnData = {
-                            code: 101,
-                            message: res.data && res.data.message,
-                            result: res.data
-                        }
-                        try {
-                            if (fail) {
-                                fail(returnData);
-                            }
-                        } catch (error) {
-                            console.error(error);
-                        }
-                    },
-                    complete: function () {
-                        try {
-                            if (complete) {
-                                complete();
-                            }
-                        } catch (error) {
-                            console.error(error);
-                        }
-                    }
-                });
-            },
-            fail: function (e) {
-                console.log(e)
-                try {
-                    if (fail) {
-                        fail(e);
-                    }
-                } catch (error) {
-                    console.error(error);
-                }
-
-                try {
-                    if (complete) {
-                        complete();
-                    }
-                } catch (error) {
-                    console.error(error);
-                }
+        getOrder().then(order => {
+            if (!order) {
+                return;
             }
-        })
+            const orderInfo = {
+                appId: this._vivoCfg.appid,
+                productName: productName,
+                productDesc: productDesc,
+
+                cpOrderNumber: order.cpOrderNumber,
+                orderAmount: order.orderAmount,
+                notifyUrl: order.notifyUrl,
+                vivoSignature: order.vivoSignature,
+            };
+            qg.pay({
+                orderInfo,
+                success: (payRes) => {
+                    this._safeCallback(success, {
+                        payRes: payRes,
+                        orderId: orderInfo.cpOrderNumber,
+                    });
+                },
+                fail: (payRes) => {
+                    this._safeCallback(fail, payRes);
+                },
+                cancel: (payRes) => {
+                    this._safeCallback(fail, payRes);
+                },
+                complete: () => {
+                    this._safeCallback(complete);
+                }
+            });
+        });
     }
 }
 

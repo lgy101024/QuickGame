@@ -1,75 +1,79 @@
-const Base_SDK = require("./sdk.base")
-let honorConfig = {}
+const Base_SDK = require("./sdk.base");
 
 class HONOR_SDK extends Base_SDK {
     constructor() {
-        honorConfig = qg.__sdk_config.honorConfig
         super();
+        this._honorConfig = qg.__sdk_config.honorConfig || {};
     }
+
     init(json) {
-        //初始化
+        // 初始化逻辑，可以根据需要扩展
+        console.log('HONOR_SDK 初始化参数:', json);
     }
-    //登陆接口
-    unionLogin(object) {
-        const { success, fail, complete, needAuthCode = false, isProfileRequired = false } = object;
+
+    // 登录接口
+    unionLogin({ success, fail, complete, needAuthCode = false, isProfileRequired = false } = {}) {
         qg.login({
-            needAuthCode: needAuthCode,
-            isProfileRequired: isProfileRequired,
-            fail: function (res) {
-                //登录失败
+            needAuthCode,
+            isProfileRequired,
+            fail: (res) => {
+                console.warn("HONOR 登录失败", res);
+                this._safeCallback(fail, res);
+            },
+            success: (res) => {
                 try {
-                    console.log("HONOR 登陆失败", res);
-                    if (fail && typeof fail === 'function') {
-                        fail(res);
-                    }
-                    if (complete && typeof complete === 'function') {
-                        complete(res);
-                    }
+                    const resData = res.data;
+                    console.log("HONOR 登录成功", JSON.stringify(res));
+                    this._safeCallback(success, resData);
                 } catch (error) {
-                    console.log(error)
+                    console.error('处理登录成功回调时异常:', error);
+                    this._safeCallback(fail, error);
                 }
             },
-            success: function (res) {
-                try {
-                    console.log('login方法返回的值', res)
-                    const resData = res.data; // 联盟的标准，返回的值就是res
-                    console.log("HONOR 登陆成功,获取到 token : " + JSON.stringify(res));
-                    if (success && typeof success === 'function') {
-                        success(resData)
-                    }
-                    if (complete && typeof complete === 'function') {
-                        complete()
-                    }
-                } catch (error) {
-                    console.log(error)
-                }
-            },
+            complete: () => {
+                this._safeCallback(complete);
+            }
         });
     }
-    //支付接口
-    //orderAmount  商品价格  单位为分，如商品价格为6元则要传“600”，传“6”或者“600.0”则会报错
-    unionPay(object) {
-        const { orderInfo, success, fail, complete } = object;
-        if (orderInfo == null || orderInfo == undefined) {
-            console.log("charge orderInfo error");
-            return;
-        }
-        let returnData = null
-        qg.pay({
-            orderInfo: orderInfo,
-            success(res) {
-                console.log(JSON.stringify(res.data));
-                returnData = { code: 0, message: '支付成功', result: res.data }
-                if (success) success(returnData);
-            },
-            fail(res) {
-                console.log(JSON.stringify(res));
-                returnData = { code: res.errCode, message: res.errMsg, result: '' }
-                if (fail) fail(returnData);
-            },
-            complete(res) {
-                if (complete) complete(returnData);
-            },
+
+    // 支付接口
+    unionPay({ param, success, fail, complete }) {
+        const { productName, productDesc, getOrder } = param;
+        getOrder().then(order => {
+            if (!order) {
+                return;
+            }
+            const orderInfo = {
+                appId: this._honorConfig.appid,
+                cpId: cpId,
+                productId: productId,
+                productName: productName,
+                productDesc: productDesc,
+
+                publicKey: order.publicKey,
+                orderAmount: order.orderAmount,
+                developerPayload: order.developerPayload,
+                bizOrderNo: order.bizOrderNo,
+                needSandboxTest: 0,
+            };
+            qg.pay({
+                orderInfo,
+                success: (payRes) => {
+                    this._safeCallback(success, {
+                        payRes: payRes,
+                        orderId: orderInfo.cpOrderNumber,
+                    });
+                },
+                fail: (payRes) => {
+                    this._safeCallback(fail, payRes);
+                },
+                cancel: (payRes) => {
+                    this._safeCallback(fail, payRes);
+                },
+                complete: () => {
+                    this._safeCallback(complete);
+                }
+            });
         });
     }
 }

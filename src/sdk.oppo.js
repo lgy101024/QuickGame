@@ -6,17 +6,6 @@ class OPPO_SDK extends Base_SDK {
         this._oppoCfg = qg.__sdk_config.oppoConfig || {};
     }
 
-    // 统一安全调用回调函数
-    _safeCallback(callback, data) {
-        try {
-            if (typeof callback === 'function') {
-                callback(data);
-            }
-        } catch (error) {
-            console.error(error);
-        }
-    }
-
     init(json) {
         // 初始化逻辑（保持空）
     }
